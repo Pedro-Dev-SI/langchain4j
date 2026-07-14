@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: langchain4j
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5433/langchain4j}
+    username: ${POSTGRES_USER:langchain4j}
+    password: ${POSTGRES_PASSWORD:langchain4j}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+app:
+  ai:
+    provider: ${APP_AI_PROVIDER:ollama}
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  model: gemini-3.1-flash-lite
+
+ollama:
+  base-url: http://localhost:11434
+  model: llama3.2
+
+rag:
+  embedding:
+    base-url: ${RAG_EMBEDDING_BASE_URL:http://localhost:11434}
+    model: ${RAG_EMBEDDING_MODEL:nomic-embed-text}
+  vector-store:
+    host: ${RAG_VECTOR_HOST:localhost}
+    port: ${RAG_VECTOR_PORT:5433}
+    database: ${RAG_VECTOR_DATABASE:langchain4j}
+    user: ${RAG_VECTOR_USER:langchain4j}
+    password: ${RAG_VECTOR_PASSWORD:langchain4j}
+    table: ${RAG_VECTOR_TABLE:knowledge_embeddings}
+    dimension: ${RAG_VECTOR_DIMENSION:768}
+
+logging:
+  pattern:
+    level: "%5p %kvp"
+
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health
