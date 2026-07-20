@@ -23,12 +23,16 @@ public class CarServce {
     }
 
     public List<AvailableCarResponse> listAllAvailableCarsByCategory(String categoryCode) {
-        logger.info("Request to list all cars by catgeory: {}", categoryCode.toUpperCase());
+        logger.info("Request to list all cars by category: {}", categoryCode);
 
-        if (categoryCode.isBlank()) {
+        if (categoryCode == null || categoryCode.isBlank()) {
+            logger.warn("Car listing request rejected because category is null or blank");
             throw new CategoryNullException("Categoria de carro não pode ser nula");
         }
+
         List<Car> carsFound = carRepository.findAllByCategoryCodeAndStatus(categoryCode, StatusVeichleEnum.DISPONIVEL);
+        logger.info("Found {} available cars for category: {}", carsFound.size(), categoryCode);
+
         return carsFound.stream().map(car -> new AvailableCarResponse(
                 car.getModel(),
                 car.getCategory().getCode(),
