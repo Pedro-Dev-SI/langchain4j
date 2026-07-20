@@ -1,0 +1,38 @@
+package com.br.langchain4j.rental.application;
+
+import com.br.langchain4j.rental.domain.Car;
+import com.br.langchain4j.rental.domain.enums.StatusVeichleEnum;
+import com.br.langchain4j.rental.dto.AvailableCarResponse;
+import com.br.langchain4j.rental.repository.CarRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class CarServce {
+
+    private static final Logger logger = LoggerFactory.getLogger(CarServce.class);
+
+
+    private final CarRepository carRepository;
+
+    public CarServce(CarRepository carRepository) {
+        this.carRepository = carRepository;
+    }
+
+    public List<AvailableCarResponse> listAllAvailableCarsByCategory(String categoryCode) {
+        logger.info("Request to list all cars by catgeory: {}", categoryCode.toUpperCase());
+
+        if (categoryCode.isBlank()) {
+            throw new CategoryNullException("Categoria de carro não pode ser nula");
+        }
+        List<Car> carsFound = carRepository.findAllByCategoryCodeAndStatus(categoryCode, StatusVeichleEnum.DISPONIVEL);
+        return carsFound.stream().map(car -> new AvailableCarResponse(
+                car.getModel(),
+                car.getCategory().getCode(),
+                car.getStatus().name()
+        )).toList();
+    }
+}

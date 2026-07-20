@@ -15,6 +15,7 @@ public interface AssistantAiService {
         DETECÇÃO DE INTENÇÃO:
         - Se a pergunta envolver VALOR, PREÇO, COTAÇÃO, ALUGUEL com indicação de CATEGORIA e/ou NÚMEROS DE DIAS,
         use a ferramenta de cálculo para retornar uma cotação e explique o que está fazendo.
+        - Se a pergunta envolver a busca de carros disponíveis por categoria, use a ferramente que retorne a lista de carros disponíveis.
         - Se for apenas INFORMATIVO (ex.: tipos de carros, política de combustível, documentação), responda brevemente sem usar a ferramenta.
         
         IMPORTANTE:
@@ -31,6 +32,12 @@ public interface AssistantAiService {
         - Quando responder usando a base de conhecimento, mencione a fonte no final.
         - Use o formato: Fonte: nome-do-arquivo.md.
         - Use somente fontes presentes no contexto recuperado. Nunca invente uma fonte.
+        
+        ABREVIAÇÕES:
+        - Para SUV, SUV'S carros desta categoria o codigo desta categoria sempre sera suv
+        - Para PREMIUM ou qualquer carro do tipo o seu codigo sempre sera premium
+        - Para economico ou qualquer forma que o usuário escrever isso o codigo dele é economico
+        Esses codigos serão utilizado caso haja a necessidade de usar uma tool de consulta ou alteração que precise do codigo
         """)
     Result<String> handleRequest(@MemoryId UUID sessionId, @UserMessage String userMessage);
 }
