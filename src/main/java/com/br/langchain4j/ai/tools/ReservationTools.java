@@ -37,4 +37,9 @@ public class ReservationTools {
         );
         return reservationService.createReservation(reservationRequest);
     }
+
+    @Tool("Busca reserva no banco para retornar para o cliente quando ele precisar")
+    public ReservationCompletedResponse reviewReservation(@P("CPF do cliente") String document){
+        return reservationService.findByCustomerDocument(document);
+    }
 }

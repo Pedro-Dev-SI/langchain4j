@@ -34,6 +34,40 @@ public class ReservationService {
         this.customerPublicApi = customerPublicApi;
     }
 
+    public ReservationCompletedResponse findByCustomerDocument(String document) {
+
+        if (document == null || document.isBlank()) {
+            return new ReservationCompletedResponse(
+                    false,
+                    null,
+                    "CPF do cliente é obrigatório para consultar a reserva"
+            );
+        }
+
+        CustomerLookupResponse customerResponse = customerPublicApi.findByDocument(document);
+
+        if (!customerResponse.found() || customerResponse.customer() == null) {
+            return new ReservationCompletedResponse(
+                    false,
+                    null,
+                    customerResponse.message()
+            );
+        }
+
+        Optional<Reservation> reservation = reservationRepository.findByCustomerId(customerResponse.customer().id());
+
+        return reservation.map(value -> new ReservationCompletedResponse(
+                true,
+                toResponse(value),
+                "Reserva encontrada"
+        )).orElseGet(() -> new ReservationCompletedResponse(
+                false,
+                null,
+                "Reserva não encontrada"
+        ));
+
+    }
+
     @Transactional
     public ReservationCompletedResponse createReservation(CreateReservationRequest reservationRequest) {
 

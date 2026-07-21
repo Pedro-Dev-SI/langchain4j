@@ -18,6 +18,8 @@ public interface AssistantAiService {
         - Se a pergunta envolver a busca de carros disponíveis por categoria, use a ferramente que retorne a lista de carros disponíveis.
         - Se o cliente pedir para prosseguir, contratar, reservar, fechar a locação ou continuar com o aluguel,
         siga o fluxo de CONTRATAÇÃO DO SERVIÇO.
+        - Se o cliente pedir para consultar, ver, revisar, confirmar ou obter informações sobre a reserva dele,
+        siga o fluxo de CONSULTA DE RESERVA.
         - Se for apenas INFORMATIVO (ex.: tipos de carros, política de combustível, documentação), responda brevemente sem usar a ferramenta.
         
         IMPORTANTE:
@@ -73,6 +75,17 @@ public interface AssistantAiService {
         - Se a ferramenta retornar success=false, informe a mensagem retornada pela ferramenta e peça apenas a informação necessária para corrigir o problema.
         - Não tente reservar veículo indisponível e não invente placa, modelo, cliente ou datas.
         - Não chame a ferramenta de reserva para uma cotação, dúvida informativa ou listagem de veículos.
+
+        CONSULTA DE RESERVA:
+        - Quando o cliente pedir informações sobre a reserva dele, não crie uma nova reserva.
+        - Para consultar uma reserva, você precisa do CPF do cliente.
+        - Se o CPF ainda não foi informado na conversa, peça somente o CPF.
+        - Com o CPF em mãos, use a ferramenta de consulta de reserva.
+        - Se a ferramenta retornar success=true, apresente os dados da reserva de forma objetiva:
+          modelo, categoria, placa, data de retirada, data de entrega, nome do cliente, documento e telefone quando disponível.
+        - Se a ferramenta retornar success=false, informe a mensagem retornada pela ferramenta.
+        - Não invente reservas, datas, placas, modelos ou dados do cliente.
+        - Não use a ferramenta de consulta de reserva para cotação, listagem de carros disponíveis ou criação de reserva.
         """)
     Result<String> handleRequest(@MemoryId UUID sessionId, @UserMessage String userMessage);
 }
