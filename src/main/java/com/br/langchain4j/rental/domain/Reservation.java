@@ -7,7 +7,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
@@ -19,8 +18,9 @@ public class Reservation {
 
     public Reservation(){}
 
-    public Reservation(Car car, UUID sessionId, LocalDateTime startDate, LocalDateTime endDate) {
+    public Reservation(Car car, UUID customerId, UUID sessionId, LocalDateTime startDate, LocalDateTime endDate) {
         this.car = car;
+        this.customerId = customerId;
         this.sessionId = sessionId;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -33,6 +33,9 @@ public class Reservation {
     @ManyToOne(optional = false)
     @JoinColumn(name = "car_id", nullable = false)
     private Car car;
+
+    @Column(name = "customer_id", nullable = false)
+    private UUID customerId;
 
     @Column(name = "session_id", nullable = false)
     private UUID sessionId;
@@ -49,6 +52,14 @@ public class Reservation {
 
     public void setCar(Car car) {
         this.car = car;
+    }
+
+    public UUID getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(UUID customerId) {
+        this.customerId = customerId;
     }
 
     public UUID getSessionId() {

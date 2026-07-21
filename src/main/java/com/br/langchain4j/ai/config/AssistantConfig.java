@@ -5,6 +5,7 @@ import com.br.langchain4j.ai.guardrail.RentalScopeInputGuardrail;
 import com.br.langchain4j.ai.guardrail.RentalScopeOutputGuardrail;
 import com.br.langchain4j.ai.tools.AssistantTools;
 import com.br.langchain4j.ai.tools.CustomerTools;
+import com.br.langchain4j.ai.tools.ReservationTools;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.googleai.GeminiThinkingConfig;
@@ -77,10 +78,15 @@ public class AssistantConfig {
     }
 
     @Bean
-    public AssistantAiService assistant(ChatModel model, AssistantTools assistantTools, CustomerTools customerTools, RetrievalAugmentor retrievalAugmentor) {
+    public AssistantAiService assistant(
+            ChatModel model,
+            AssistantTools assistantTools,
+            CustomerTools customerTools,
+            ReservationTools reservationTools,
+            RetrievalAugmentor retrievalAugmentor) {
         return AiServices.builder(AssistantAiService.class)
                 .chatModel(model)
-                .tools(assistantTools, customerTools)
+                .tools(assistantTools, customerTools, reservationTools)
                 .chatMemoryProvider(chatMemoryProvider())
                 .retrievalAugmentor(retrievalAugmentor)
                 .inputGuardrails(new RentalScopeInputGuardrail())

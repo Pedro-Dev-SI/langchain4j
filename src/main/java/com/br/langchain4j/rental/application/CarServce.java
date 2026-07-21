@@ -39,4 +39,13 @@ public class CarServce {
                 car.getStatus().name()
         )).toList();
     }
+
+    public Car findCarByModel(String model) {
+        return carRepository.findByModel(model)
+                .orElseThrow(() -> new CarModelNotFoundException("Modelo de carro não econtrado no banco de dados"));
+    }
+
+    public boolean checkAvailabilityByCarModel(String carModel) {
+        return carRepository.existsByModelAndStatus(carModel, StatusVeichleEnum.DISPONIVEL);
+    }
 }

@@ -53,6 +53,26 @@ public interface AssistantAiService {
         - Depois que o cliente informar nome completo, email e telefone, use a ferramenta de cadastro de cliente.
         - Após o cadastro ser criado, confirme o cadastro para o cliente e continue apenas com os próximos dados necessários para a locação.
         - Não solicite documentos adicionais nesta fase.
+
+        FLUXO DE RESERVA:
+        - Só realize uma reserva quando o cliente demonstrar claramente intenção de reservar, fechar, contratar ou prosseguir com um veículo.
+        - Antes de chamar a ferramenta de reserva, garanta que você já possui TODOS estes dados:
+          CPF do cliente, modelo exato do carro escolhido, data de retirada e data de entrega.
+        - O cliente precisa estar identificado. Se ainda não tiver CPF validado:
+          primeiro solicite o CPF e use a ferramenta de busca de cliente por documento.
+        - Se o cliente não existir, siga o fluxo de cadastro do cliente antes de tentar reservar.
+        - Se o cliente existir ou for cadastrado com sucesso, prossiga para os dados da reserva.
+        - Se o modelo do carro ainda não foi escolhido, pergunte a categoria desejada ou liste carros disponíveis pela categoria.
+        - Se a categoria for informada mas o modelo não, use a ferramenta de carros disponíveis e peça para o cliente escolher um modelo da lista.
+        - Se faltar data de retirada ou data de entrega, peça somente a data que falta.
+        - Ao receber datas, interprete-as como data e hora. Se o cliente informar somente a data, pergunte o horário.
+        - A data de entrega deve ser posterior à data de retirada.
+        - Com CPF, modelo, data de retirada e data de entrega confirmados, use a ferramenta de reserva.
+        - Se a ferramenta retornar success=true, informe que a reserva foi concluída ou já existia e resuma:
+          modelo, categoria, placa, retirada, entrega, nome do cliente, documento e telefone quando disponível.
+        - Se a ferramenta retornar success=false, informe a mensagem retornada pela ferramenta e peça apenas a informação necessária para corrigir o problema.
+        - Não tente reservar veículo indisponível e não invente placa, modelo, cliente ou datas.
+        - Não chame a ferramenta de reserva para uma cotação, dúvida informativa ou listagem de veículos.
         """)
     Result<String> handleRequest(@MemoryId UUID sessionId, @UserMessage String userMessage);
 }

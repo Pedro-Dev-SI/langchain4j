@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class CustomerService implements CustomerPublicApi {
@@ -85,6 +86,29 @@ public class CustomerService implements CustomerPublicApi {
         );
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerLookupResponse findById(UUID id) {
+        logger.info("Request to find customer by id: {}", id);
+
+        if (id == null) {
+            logger.warn("Customer lookup rejected because id is null");
+            return new CustomerLookupResponse(false, null, "Identificador do cliente nulo");
+        }
+
+        return customerRepository.findById(id)
+                .map(customer -> new CustomerLookupResponse(
+                        true,
+                        toResponse(customer),
+                        "Usuário encontrado no sistema"
+                ))
+                .orElseGet(() -> new CustomerLookupResponse(
+                        false,
+                        null,
+                        "Cliente não encontrado"
+                ));
+    }
+
     private CustomerResponse createCustomer(CreateCustomerRequest request, String normalizedDocument) {
         logger.info("Persisting new customer with document: {}", normalizedDocument);
 
@@ -143,6 +167,7 @@ public class CustomerService implements CustomerPublicApi {
 
     private CustomerResponse toResponse(Customer customer) {
         return new CustomerResponse(
+                customer.getId(),
                 customer.getName(),
                 customer.getDocument(),
                 customer.getEmail(),

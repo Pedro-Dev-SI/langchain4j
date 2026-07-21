@@ -1,0 +1,181 @@
+package com.br.langchain4j.rental.application;
+
+import com.br.langchain4j.customer.application.CustomerPublicApi;
+import com.br.langchain4j.customer.dto.CustomerLookupResponse;
+import com.br.langchain4j.customer.dto.CustomerResponse;
+import com.br.langchain4j.rental.domain.Car;
+import com.br.langchain4j.rental.domain.RentalCategory;
+import com.br.langchain4j.rental.domain.Reservation;
+import com.br.langchain4j.rental.domain.enums.StatusVeichleEnum;
+import com.br.langchain4j.rental.dto.CreateReservationRequest;
+import com.br.langchain4j.rental.dto.ReservationCompletedResponse;
+import com.br.langchain4j.rental.repository.ReservationRepository;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class ReservationServiceTest {
+
+    private final ReservationRepository reservationRepository = mock(ReservationRepository.class);
+    private final CarServce carServce = mock(CarServce.class);
+    private final CustomerPublicApi customerPublicApi = mock(CustomerPublicApi.class);
+    private final ReservationService reservationService = new ReservationService(
+            reservationRepository,
+            carServce,
+            customerPublicApi
+    );
+
+    @Test
+    void shouldReturnExistingReservationForSessionAndCar() {
+        UUID sessionId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        Car car = car();
+        Reservation existingReservation = new Reservation(
+                car,
+                customerId,
+                sessionId,
+                LocalDateTime.parse("2026-08-01T10:00:00"),
+                LocalDateTime.parse("2026-08-05T10:00:00")
+        );
+
+        when(carServce.findCarByModel("Onix")).thenReturn(car);
+        when(reservationRepository.findBySessionIdAndCarId(sessionId, null)).thenReturn(Optional.of(existingReservation));
+        when(customerPublicApi.findById(customerId)).thenReturn(foundCustomer(customerId));
+
+        ReservationCompletedResponse response = reservationService.createReservation(request(sessionId));
+
+        assertThat(response.success()).isTrue();
+        assertThat(response.message()).isEqualTo("Reserva já existe para esta sessão e veículo");
+        assertThat(response.reservation().customerName()).isEqualTo("Maria Silva");
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectReservationWhenEndDateIsNotAfterStartDate() {
+        UUID sessionId = UUID.randomUUID();
+        when(carServce.findCarByModel("Onix")).thenReturn(car());
+        when(reservationRepository.findBySessionIdAndCarId(sessionId, null)).thenReturn(Optional.empty());
+
+        CreateReservationRequest request = new CreateReservationRequest(
+                sessionId,
+                "123.456.789-00",
+                LocalDateTime.parse("2026-08-01T10:00:00"),
+                LocalDateTime.parse("2026-08-01T10:00:00"),
+                "Onix"
+        );
+
+        ReservationCompletedResponse response = reservationService.createReservation(request);
+
+        assertThat(response.success()).isFalse();
+        assertThat(response.message()).isEqualTo("Data de entrega deve ser posterior à data de retirada");
+        verify(customerPublicApi, never()).findByDocument(anyString());
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectReservationWhenCustomerDoesNotExist() {
+        UUID sessionId = UUID.randomUUID();
+        when(carServce.findCarByModel("Onix")).thenReturn(car());
+        when(reservationRepository.findBySessionIdAndCarId(sessionId, null)).thenReturn(Optional.empty());
+        when(customerPublicApi.findByDocument("123.456.789-00"))
+                .thenReturn(new CustomerLookupResponse(false, null, "Cliente não encontrado"));
+
+        ReservationCompletedResponse response = reservationService.createReservation(request(sessionId));
+
+        assertThat(response.success()).isFalse();
+        assertThat(response.message()).isEqualTo("Cliente não encontrado");
+        verify(carServce, never()).checkAvailabilityByCarModel(anyString());
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectReservationWhenCarIsUnavailable() {
+        UUID sessionId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        when(carServce.findCarByModel("Onix")).thenReturn(car());
+        when(reservationRepository.findBySessionIdAndCarId(sessionId, null)).thenReturn(Optional.empty());
+        when(customerPublicApi.findByDocument("123.456.789-00")).thenReturn(foundCustomer(customerId));
+        when(carServce.checkAvailabilityByCarModel("Onix")).thenReturn(false);
+
+        ReservationCompletedResponse response = reservationService.createReservation(request(sessionId));
+
+        assertThat(response.success()).isFalse();
+        assertThat(response.message()).isEqualTo("Veículo se encontra indisponível no momento");
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldCreateReservationAndMarkCarAsReserved() {
+        UUID sessionId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        Car car = car();
+
+        when(carServce.findCarByModel("Onix")).thenReturn(car);
+        when(reservationRepository.findBySessionIdAndCarId(sessionId, null)).thenReturn(Optional.empty());
+        when(customerPublicApi.findByDocument("123.456.789-00")).thenReturn(foundCustomer(customerId));
+        when(carServce.checkAvailabilityByCarModel("Onix")).thenReturn(true);
+        when(customerPublicApi.findById(customerId)).thenReturn(foundCustomer(customerId));
+        when(reservationRepository.save(any(Reservation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ReservationCompletedResponse response = reservationService.createReservation(request(sessionId));
+
+        assertThat(response.success()).isTrue();
+        assertThat(response.message()).isEqualTo("Reserva realizada com sucesso");
+        assertThat(response.reservation().carModel()).isEqualTo("Onix");
+        assertThat(response.reservation().customerDocument()).isEqualTo("12345678900");
+        assertThat(car.getStatus()).isEqualTo(StatusVeichleEnum.RESERVADO);
+        verify(reservationRepository).save(any(Reservation.class));
+    }
+
+    private CreateReservationRequest request(UUID sessionId) {
+        return new CreateReservationRequest(
+                sessionId,
+                "123.456.789-00",
+                LocalDateTime.parse("2026-08-01T10:00:00"),
+                LocalDateTime.parse("2026-08-05T10:00:00"),
+                "Onix"
+        );
+    }
+
+    private CustomerLookupResponse foundCustomer(UUID customerId) {
+        return new CustomerLookupResponse(
+                true,
+                new CustomerResponse(
+                        customerId,
+                        "Maria Silva",
+                        "12345678900",
+                        "maria@email.com",
+                        "11999999999",
+                        "INDIVIDUAL"
+                ),
+                "Usuário encontrado no sistema"
+        );
+    }
+
+    private Car car() {
+        return new Car(
+                new RentalCategory(
+                        "economico",
+                        "Econômico",
+                        new BigDecimal("120.00"),
+                        new BigDecimal("0.0500"),
+                        true
+                ),
+                "Onix",
+                "ABC-1234",
+                StatusVeichleEnum.DISPONIVEL
+        );
+    }
+}
